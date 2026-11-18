@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MEMOSPHERE — AI API Configuration &amp; Settings</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-logo">M</div>
+        <div>
+          <div class="brand-title">MEMOSPHERE</div>
+          <span class="brand-tagline">AI Provider Configuration</span>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <a class="nav-item" href="/index.html">← Companion Dashboard</a>
+        <a class="nav-item" href="/caregiver.html">Caregiver Dashboard</a>
+        <a class="nav-item active" href="/settings.html">Settings &amp; AI API</a>
+        <a class="nav-item" href="/login.html">Switch Account</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="greeting-box">
+          <h1>AI API Integration &amp; Privacy Settings</h1>
+          <p>Configure Groq, NVIDIA NIM, Google Gemini, or OpenAI via backend environment variables. Secrets are never exposed to the browser or stored in localStorage.</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="accessibility-btn" data-action="toggle-accessibility">
+            <span>♿</span>
+            <span data-role="accessibility-label">Simplified Mode</span>
+          </button>
+        </div>
+      </header>
+
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🔌 Active AI Provider Status</h2>
+            <span id="settings-mode-badge" class="badge badge-items">Checking...</span>
+          </div>
+
+          <div class="item-list" style="margin-bottom:1.2rem;">
+            <div class="list-card">
+              <div>
+                <div class="list-card-title">Selected Provider (`AI_PROVIDER`)</div>
+                <div class="list-card-desc" id="status-provider-name">groq</div>
+              </div>
+            </div>
+            <div class="list-card">
+              <div>
+                <div class="list-card-title">Active Model (per-provider)</div>
+                <div class="list-card-desc" id="status-model-name">llama-3.3-70b-versatile</div>
+              </div>
+            </div>
+            <div class="list-card">
+              <div>
+                <div class="list-card-title">Backend Environment Key Status (Masked)</div>
+                <div class="list-card-desc" id="status-masked-key">Not configured</div>
+              </div>
+            </div>
+          </div>
+
+          <button type="button" class="btn btn-primary" onclick="testConnectivity()">
+            🔍 Test Live API Connectivity
+          </button>
+
+          <div id="connectivity-result" class="list-card" style="display:none;margin-top:1rem;"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">⚙️ Switch Provider or Model (Backend Session)</h2>
+          </div>
+          <p class="list-card-desc" style="margin-bottom:1rem;">
+            Only the selected provider needs an API key in your <code>.env</code> file. If no key is configured, MEMOSPHERE automatically uses its built-in rule-based engine.
+          </p>
+
+          <form onsubmit="saveProviderSettings(event)">
+            <div class="form-group">
+              <label class="form-label">Select External AI Provider</label>
+              <select id="cfg-provider" class="form-control" onchange="syncDefaultModel()">
+                <option value="groq">Groq API (Default: llama-3.3-70b-versatile)</option>
+                <option value="nvidia_nim">NVIDIA NIM API (Default: meta/llama-3.1-70b-instruct)</option>
+                <option value="gemini">Google Gemini API (Default: gemini-2.5-flash)</option>
+                <option value="openai">OpenAI API (Default: gpt-4o-mini)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Model Name (per-provider MODEL variable)</label>
+              <input type="text" id="cfg-model" class="form-control" value="llama-3.3-70b-versatile" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Optional Backend Session API Key (Sent only to backend memory, never stored in browser)</label>
+              <input
+                type="password"
+                id="cfg-api-key"
+                class="form-control"
+                placeholder="Leave blank to keep existing .env key"
+                autocomplete="off"
+              />
+            </div>
+
+            <button type="submit" class="btn btn-primary">Apply Backend Configuration</button>
+          </form>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/accessibility.js"></script>
+  <script>
+    const DEFAULT_MODELS = {
+      groq: "llama-3.3-70b-versatile",
+      nvidia_nim: "meta/llama-3.1-70b-instruct",
+      gemini: "gemini-2.5-flash",
+      openai: "gpt-4o-mini",
+    };
+
+    function syncDefaultModel() {
+      const prov = document.getElementById("cfg-provider").value;
+      document.getElementById("cfg-model").value = DEFAULT_MODELS[prov] || "";
+    }
+
+    async function loadStatus() {
+      const res = await fetch("/api/ai/status");
+      const data = await res.json();
+      document.getElementById("status-provider-name").textContent = (data.selected_provider || "groq").toUpperCase();
+      document.getElementById("status-model-name").textContent = data.selected_model || "";
+      document.getElementById("status-masked-key").textContent = data.masked_api_key || "Not configured";
+      document.getElementById("cfg-provider").value = data.selected_provider || "groq";
+      document.getElementById("cfg-model").value = data.selected_model || DEFAULT_MODELS[data.selected_provider || "groq"];
+
+      const badge = document.getElementById("settings-mode-badge");
+      if (data.api_key_configured) {
+        badge.textContent = "External AI API Configured";
+        badge.className = "badge badge-places";
+      } else {
+        badge.textContent = "Local Rule-Based Fallback Active";
+        badge.className = "badge badge-items";
+      }
+    }
+
+    async function saveProviderSettings(e) {
+      e.preventDefault();
+      const provider = document.getElementById("cfg-provider").value;
+      const model = document.getElementById("cfg-model").value;
+      const api_key = document.getElementById("cfg-api-key").value;
+
+      const res = await fetch("/api/ai/settings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, model, api_key }),
+      });
+      const data = await res.json();
+      document.getElementById("cfg-api-key").value = "";
+      await loadStatus();
+
+      const box = document.getElementById("connectivity-result");
+      box.style.display = "block";
+      box.innerHTML = `<div class="list-card-desc"><strong>Updated:</strong> ${data.message || "Settings applied."}</div>`;
+    }
+
+    async function testConnectivity() {
+      const box = document.getElementById("connectivity-result");
+      box.style.display = "block";
+      box.innerHTML = `<div class="list-card-desc">Testing connection to selected provider...</div>`;
+
+      const provider = document.getElementById("cfg-provider").value;
+      const model = document.getElementById("cfg-model").value;
+
+      const res = await fetch("/api/ai/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, model }),
+      });
+      const data = await res.json();
+      box.style.borderColor = data.connected ? "#10b981" : "#f59e0b";
+      box.innerHTML = `
+        <div>
+          <div class="list-card-title">${data.connected ? "✅ Connected to External AI API" : "ℹ️ Running in Rule-Based Fallback Mode"}</div>
+          <div class="list-card-desc">${data.message}</div>
+        </div>
+      `;
+    }
+
+    document.addEventListener("DOMContentLoaded", loadStatus);
+  </script>
+</body>
+</html>

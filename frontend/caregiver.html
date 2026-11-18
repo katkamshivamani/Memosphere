@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MEMOSPHERE — Caregiver Wellness &amp; Routine Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand-box">
+        <div class="brand-logo">M</div>
+        <div>
+          <div class="brand-title">MEMOSPHERE</div>
+          <span class="brand-tagline">Caregiver Portal (Privacy-Protected)</span>
+        </div>
+      </div>
+      <nav class="nav-list">
+        <a class="nav-item" href="/index.html">← Companion Dashboard</a>
+        <a class="nav-item active" href="/caregiver.html">Caregiver Dashboard</a>
+        <a class="nav-item" href="/settings.html">AI API Settings</a>
+        <a class="nav-item" href="/login.html">Switch Account</a>
+      </nav>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div class="greeting-box">
+          <h1>Caregiver Wellness &amp; Routine Dashboard</h1>
+          <p>Role-Based Consent View — Personal memories and private conversations are strictly redacted.</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary" onclick="toggleConsent('granted')">Grant Consent</button>
+          <button class="btn btn-danger" onclick="toggleConsent('revoked')">Revoke Consent (Test Lock)</button>
+          <button class="accessibility-btn" data-action="toggle-accessibility">
+            <span>♿</span>
+            <span data-role="accessibility-label">Simplified Mode</span>
+          </button>
+        </div>
+      </header>
+
+      <div id="caregiver-unauthorized" class="card" style="display:none;border-color:#ef4444;background:#fef2f2;">
+        <h2 class="card-title" style="color:#b91c1c;">🔒 Caregiver Access Locked (Consent Required)</h2>
+        <p id="unauthorized-msg" style="margin-top:0.5rem;color:#7f1d1d;"></p>
+        <p style="margin-top:0.75rem;font-size:0.9rem;">
+          Click <strong>Grant Consent</strong> in the top bar to simulate the primary user authorizing routine &amp; reminder visibility.
+        </p>
+      </div>
+
+      <div id="caregiver-authorized-content">
+        <div class="card" style="margin-bottom:1.5rem;background:var(--bg-accent-soft);">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.75rem;">
+            <div>
+              <strong>Privacy &amp; Consent Guardrail Active:</strong>
+              <span id="cg-privacy-banner">Caregivers can view routine adherence and pending reminders only. Private memories (People, Items, Places) cannot be accessed here.</span>
+            </div>
+            <span class="badge badge-places" id="cg-consent-badge">Consent: GRANTED</span>
+          </div>
+        </div>
+
+        <div class="grid-4">
+          <div class="stat-card">
+            <div>
+              <div class="stat-value" id="cg-completion-rate">0%</div>
+              <div class="stat-label">Daily Routine Adherence</div>
+            </div>
+            <div class="stat-icon">✅</div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-value" id="cg-missed-count">0</div>
+              <div class="stat-label">Missed Routines Today</div>
+            </div>
+            <div class="stat-icon">⚠️</div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-value" id="cg-pending-reminders-count">0</div>
+              <div class="stat-label">Pending Reminders</div>
+            </div>
+            <div class="stat-icon">⏰</div>
+          </div>
+          <div class="stat-card">
+            <div>
+              <div class="stat-value" id="cg-activities-count">0</div>
+              <div class="stat-label">Logged Activities</div>
+            </div>
+            <div class="stat-icon">🏃</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">📋 Daily Routine Status</h2>
+            </div>
+            <div id="cg-daily-routines" class="item-list"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">⚠️ Missed Routines &amp; Frequently Missed Activities</h2>
+            </div>
+            <div id="cg-missed-routines" class="item-list" style="margin-bottom:1.15rem;"></div>
+            <h3 style="font-size:0.95rem;font-weight:700;margin-bottom:0.5rem;">Frequently Missed Activities</h3>
+            <div id="cg-frequent-missed" class="item-list"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">🔔 Pending Reminders</h2>
+          </div>
+          <div id="cg-pending-reminders" class="item-list"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/accessibility.js"></script>
+  <script>
+    async function loadCaregiverDashboard() {
+      const res = await fetch("/api/caregiver/dashboard");
+      const data = await res.json();
+
+      const unauthBox = document.getElementById("caregiver-unauthorized");
+      const authContent = document.getElementById("caregiver-authorized-content");
+
+      if (!res.ok || !data.authorized) {
+        unauthBox.style.display = "block";
+        authContent.style.display = "none";
+        document.getElementById("unauthorized-msg").textContent =
+          data.message || "Consent has not been granted by the primary user.";
+        return;
+      }
+
+      unauthBox.style.display = "none";
+      authContent.style.display = "block";
+
+      const summary = data.activity_summary || {};
+      document.getElementById("cg-completion-rate").textContent = `${summary.CompletionRatePercent || 0}%`;
+      document.getElementById("cg-missed-count").textContent = summary.missed_routines_count || 0;
+      document.getElementById("cg-pending-reminders-count").textContent = summary.pending_reminders_count || 0;
+      document.getElementById("cg-activities-count").textContent = summary.logged_activities_count || 0;
+
+      document.getElementById("cg-daily-routines").innerHTML = (data.daily_routine_status || [])
+        .map(
+          (r) => `
+        <div class="list-card">
+          <div>
+            <div class="list-card-title">${r.routine_name}</div>
+            <div class="list-card-meta">Scheduled: ${r.scheduled_time}</div>
+          </div>
+          <span class="badge ${r.completion_status === "completed" ? "badge-places" : r.completion_status === "missed" ? "badge-routines" : "badge-items"}">
+            ${r.completion_status.toUpperCase()}
+          </span>
+        </div>`
+        )
+        .join("");
+
+      const missed = data.missed_routines || [];
+      document.getElementById("cg-missed-routines").innerHTML = missed.length
+        ? missed
+            .map(
+              (m) => `
+          <div class="list-card" style="border-color:#fca5a5;background:#fef2f2;">
+            <div>
+              <div class="list-card-title" style="color:#991b1b;">${m.routine_name}</div>
+              <div class="list-card-meta">Scheduled at ${m.scheduled_time}</div>
+            </div>
+            <span class="badge badge-routines">MISSED</span>
+          </div>`
+            )
+            .join("")
+        : `<div class="list-card"><div class="list-card-desc">No missed routines today!</div></div>`;
+
+      const freq = data.frequently_missed_activities || [];
+      document.getElementById("cg-frequent-missed").innerHTML = freq.length
+        ? freq
+            .map(
+              (f) => `
+          <div class="list-card">
+            <div class="list-card-title">${f.routine_name}</div>
+            <span class="badge badge-items">${f.missed_count}x missed</span>
+          </div>`
+            )
+            .join("")
+        : `<div class="list-card"><div class="list-card-desc">None recorded.</div></div>`;
+
+      const pendingRem = data.pending_reminders || [];
+      document.getElementById("cg-pending-reminders").innerHTML = pendingRem.length
+        ? pendingRem
+            .map(
+              (rem) => `
+          <div class="list-card">
+            <div>
+              <div class="list-card-title">${rem.title} (${rem.reminder_datetime})</div>
+              <div class="list-card-desc">${rem.notification_message}</div>
+            </div>
+            <span class="badge badge-people">${rem.tone} Tone</span>
+          </div>`
+            )
+            .join("")
+        : `<div class="list-card"><div class="list-card-desc">All reminders completed!</div></div>`;
+    }
+
+    async function toggleConsent(status) {
+      await fetch("/api/caregiver/consent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ consent_status: status }),
+      });
+      await loadCaregiverDashboard();
+    }
+
+    document.addEventListener("DOMContentLoaded", loadCaregiverDashboard);
+  </script>
+</body>
+</html>
