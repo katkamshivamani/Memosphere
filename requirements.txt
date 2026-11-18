@@ -1,0 +1,9 @@
+# Core dependencies for Memosphere Module 4 – Circle of Trust
+streamlit >= 1.30.0
+plotly >= 5.15.0
+pandas >= 2.2.0
+sqlite3 >= 3.40.0  # built‑in, listed for clarity
+
+# Optional / development
+# black >= 23.7.0
+# ruff >= 0.1.0
