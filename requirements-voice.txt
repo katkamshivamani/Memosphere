@@ -1,0 +1,12 @@
+# Optional voice dependencies.
+# These are NOT installed by default: they need working audio hardware and are
+# not exercised by the standard test suite (mocked backends are used instead).
+#
+# Install with:  pip install -r requirements-voice.txt
+#
+# Speech-to-text additionally requires either:
+#   * a Gemini API key (cloud transcription, explicit user opt-in), or
+#   * faster-whisper for local transcription:
+#         pip install faster-whisper
+sounddevice>=0.4.6
+pyttsx3>=2.90
