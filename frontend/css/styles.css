@@ -1,0 +1,88 @@
+/* Memosphere v2.0 — Accessible Dual-Mode Stylesheet (Standard & Simplified Dementia Care Mode) */
+:root {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.4);
+  border-radius: 9999px;
+}
+
+/* Simplified Mode for Elderly & Dementia Care Users */
+body.simplified-mode {
+  background-color: #020617 !important;
+  color: #ffffff !important;
+  font-size: 1.12rem !important;
+  line-height: 1.65 !important;
+}
+
+body.simplified-mode .surface-card {
+  background-color: #0f172a !important;
+  border-color: #475569 !important;
+  border-width: 2px !important;
+  color: #ffffff !important;
+  padding: 1.6rem !important;
+}
+
+body.simplified-mode .sub-card {
+  background-color: #1e293b !important;
+  border-color: #64748b !important;
+  border-width: 2px !important;
+  color: #ffffff !important;
+  padding: 1.25rem !important;
+}
+
+body.simplified-mode .text-muted {
+  color: #e2e8f0 !important;
+}
+
+body.simplified-mode input,
+body.simplified-mode select,
+body.simplified-mode textarea {
+  background-color: #020617 !important;
+  border-color: #94a3b8 !important;
+  color: #ffffff !important;
+  font-size: 1.05rem !important;
+  padding-top: 0.75rem !important;
+  padding-bottom: 0.75rem !important;
+}
+
+body.simplified-mode .action-btn {
+  padding: 0.9rem 1.4rem !important;
+  font-size: 1.05rem !important;
+  font-weight: 800 !important;
+}
+
+/* Hide complex admin controls in Simplified Patient Mode */
+body.simplified-mode .admin-only-in-standard {
+  display: none !important;
+}
+
+.pulse-dot {
+  animation: pulse-ring 1.5s infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.95); opacity: 1; }
+  50% { transform: scale(1.25); opacity: 0.65; }
+  100% { transform: scale(0.95); opacity: 1; }
+}
+
+.vibrate-shake {
+  animation: shake-anim 0.45s infinite;
+}
+
+@keyframes shake-anim {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
