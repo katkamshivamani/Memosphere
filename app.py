@@ -40,6 +40,35 @@ def load_demo_data():
     demo_main()
 
 # ---------------------------------------------------------------------------
+# Trusted‑contact management UI (Stage 3)
+# ---------------------------------------------------------------------------
+# Import after DB init so the service can rely on the migrated schema.
+from memosphere.components.contact_manager import (
+    show_add_contact_form,
+    show_contacts_list,
+    show_activate_toggle,
+)
+
+# ---------------------------------------------------------------------------
+# Routine sharing UI (Stage 4)
+# ---------------------------------------------------------------------------
+# Import after DB init and the Stage‑4 migration so the permissions table
+# has the new columns and the partial unique index.
+from memosphere.components.routine_sharing_page import show_routine_sharing_page
+
+# ---------------------------------------------------------------------------
+# Routine Status UI (Stage 5)
+# ---------------------------------------------------------------------------
+# Import after DB init and the Stage‑5 migration (index on routines.status/due_date).
+from memosphere.components.routine_dashboard import show_routine_dashboard
+
+# ---------------------------------------------------------------------------
+# Weekly Analytics UI (Stage 6)
+# ---------------------------------------------------------------------------
+# Import after DB init and the Stage‑5/6 migrations.
+from memosphere.components.weekly_analytics_page import show_weekly_analytics_page
+
+# ---------------------------------------------------------------------------
 # Helper queries (pure SQL over the shared SQLite DB)
 # ---------------------------------------------------------------------------
 def get_trusted_contacts_count():
@@ -113,6 +142,31 @@ col1.metric("Trusted contacts", contact_count)
 col2.metric("Shared routines", contact_count)  # placeholder – each contact may share multiple routines
 col3.metric("Completed", completed, delta=None)
 col4.metric("Missed", missed, delta=None)
+
+# ---------------------------------------------------------------------------
+# Trusted‑contact management sidebar (Stage 3)
+# ---------------------------------------------------------------------------
+st.sidebar.title("🛡️ Circle of Trust")
+menu = st.sidebar.radio(
+    "Menu",
+    ["Dashboard", "Add contact", "View contacts", "Toggle active", "Routine sharing", "Routine Status", "Weekly Analytics"],
+    index=0,
+)
+
+# Route to the appropriate function
+if menu == "Add contact":
+    show_add_contact_form()
+elif menu == "View contacts":
+    show_contacts_list()
+elif menu == "Toggle active":
+    show_activate_toggle()
+elif menu == "Routine sharing":
+    show_routine_sharing_page()
+elif menu == "Routine Status":
+    show_routine_dashboard()
+elif menu == "Weekly Analytics":
+    show_weekly_analytics_page()
+# “Dashboard” does nothing special – the main KPI + routine table stays visible.
 
 st.markdown("---")
 
